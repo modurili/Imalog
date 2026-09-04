@@ -9,6 +9,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#121212" id="metaTheme">
 <title>イマログ</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -440,6 +443,8 @@ svg{display:block;}
 .acc-dot{width:24px;height:24px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;flex-shrink:0;}
 .acc-dot.on{border-color:var(--text);transform:scale(1.2);}
 .acc-dot:active{transform:scale(1.1);}
+.notify-select{background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;}
+.notify-note{font-size:10px;color:var(--text3);line-height:1.6;padding:10px 14px 12px;}
 </style>
 <style>
 /* OVERLAY & DRAWERS */
@@ -573,6 +578,14 @@ svg{display:block;}
         <div class="my-row tap" onclick="toggleTheme()"><svg class="ic" id="myThIc"><use href="#ic-moon"/></svg><span style="flex:1">テーマ</span><span class="my-rv" id="thLbl" style="margin-right:8px">ダーク</span><div class="tog on" id="togDk"><div class="tog-k"></div></div></div>
         <div class="my-row tap" onclick="toggleWeekStart()"><svg class="ic"><use href="#ic-calendar"/></svg><span style="flex:1">カレンダー週始まり</span><span class="my-rv" id="weekStartLbl">月曜始まり</span></div>
         <div class="my-row"><span style="flex:1">アクセントカラー</span><div class="acc-picker" id="myAccPicker"></div></div>
+      </div>
+
+      <div class="my-sec">
+        <div class="my-st">通知</div>
+        <div class="my-row tap" onclick="toggleNotify()"><svg class="ic"><use href="#ic-alarm"/></svg><span style="flex:1">継続確認通知</span><span class="my-rv" id="notifyLbl" style="margin-right:8px">オフ</span><div class="tog" id="togNotify"><div class="tog-k"></div></div></div>
+        <div class="my-row"><span style="flex:1">確認間隔</span><select class="notify-select" id="notifyInterval" onchange="onNotifyIntervalChange(this.value)"><option value="15">15分</option><option value="30">30分</option><option value="60">1時間</option><option value="120">2時間</option><option value="180">3時間</option></select></div>
+        <div class="my-row tap" onclick="testNotify()"><svg class="ic"><use href="#ic-check"/></svg><span style="flex:1">テスト通知を送る</span></div>
+        <div class="notify-note">記録中の行動が続いているか確認します。ブラウザがバックグラウンドで動いている間のみ届きます。完全終了・再起動後は届きません。</div>
       </div>
 
       <div class="my-sec">
@@ -716,7 +729,7 @@ svg{display:block;}
    イマログ — 今何してる？記録アプリ
    ============================================================ */
 
-const LS_RECS='imalog_recs', LS_CATS='imalog_cats', LS_TH='imalog_theme', LS_ACC='imalog_accent', LS_WS='imalog_weekstart';
+const LS_RECS='imalog_recs', LS_CATS='imalog_cats', LS_TH='imalog_theme', LS_ACC='imalog_accent', LS_WS='imalog_weekstart', LS_NOTIFY='imalog_notify';
 
 const DEFAULT_CATS = [
   {id:'work',  nm:'仕事', ic:'ic-work',   c:'#6b8fd4'},
@@ -831,6 +844,8 @@ let recs = JSON.parse(localStorage.getItem(LS_RECS) || '[]');
 let cats = JSON.parse(localStorage.getItem(LS_CATS) || 'null') || DEFAULT_CATS.slice();
 let currentAccent = localStorage.getItem(LS_ACC) || '#5bb88a';
 let weekStart = parseInt(localStorage.getItem(LS_WS) || '1');
+let notifyPrefs = JSON.parse(localStorage.getItem(LS_NOTIFY) || 'null') || {enabled:false, intervalMin:60};
+let lastNotifyRecId = null, lastNotifyAt = 0;
 let editingCatId = null, editingRecId = null;
 let catEditReturnTo = 'my';
 let iconGridSelected = null, iconSearchQuery = '', iconPageIndex = 0;
@@ -939,6 +954,8 @@ function goPage(name){
 function logNow(catId){
   recs.push({id:uid(), catId, ts:new Date().toISOString()});
   save();
+  lastNotifyRecId = null; lastNotifyAt = 0;
+  closeContinueNotifications();
   renderDash();
   const c=getCat(catId);
   toast(`${c?c.nm:''}を記録しました`);
@@ -1186,7 +1203,10 @@ function saveManualRecord(){
   } else {
     recs.push({id:uid(), catId, ts});
   }
-  save(); closeAllDr(); renderDash();
+  save(); closeAllDr();
+  lastNotifyRecId = null; lastNotifyAt = 0;
+  closeContinueNotifications();
+  renderDash();
   recRendered=0; document.getElementById('recL').dataset.lastDay='';
   if(document.getElementById('pg-rec').classList.contains('active')) renderRec();
   toast(editingRecId?'記録を更新しました':'記録を追加しました');
@@ -1731,6 +1751,104 @@ function renderMy(){
 
   document.getElementById('weekStartLbl').textContent = weekStart===1?'月曜始まり':'日曜始まり';
   renderAccentPicker();
+  renderNotifySettings();
+}
+
+/* ============================================================
+   CONTINUING-CONFIRM NOTIFICATIONS (local, no server)
+   Vivaldi/Android PWA: works while the browser runs in background.
+   Shown via SW registration.showNotification (new Notification() throws on Android Chrome).
+   ============================================================ */
+function loadNotifyPrefs(){
+  try{
+    const p=JSON.parse(localStorage.getItem(LS_NOTIFY)||'null');
+    if(p&&typeof p==='object') notifyPrefs={enabled:!!p.enabled, intervalMin:parseInt(p.intervalMin)||60};
+  }catch(e){}
+}
+function saveNotifyPrefs(){ localStorage.setItem(LS_NOTIFY, JSON.stringify(notifyPrefs)); }
+function renderNotifySettings(){
+  const supported = ('Notification' in window);
+  document.getElementById('notifyLbl').textContent = !supported ? '非対応' : (notifyPrefs.enabled?'オン':'オフ');
+  document.getElementById('togNotify').classList.toggle('on', !!(supported&&notifyPrefs.enabled));
+  document.getElementById('notifyInterval').value = String(notifyPrefs.intervalMin);
+}
+async function toggleNotify(){
+  if(!('Notification' in window)){ toast('このブラウザは通知に対応していません'); return; }
+  if(!notifyPrefs.enabled){
+    const perm = Notification.permission==='granted' ? 'granted' : await Notification.requestPermission();
+    if(perm!=='granted'){ toast(Notification.permission==='denied'?'通知がブロック中です。OS/Vivaldi設定で許可してください':'通知を許可してください'); return; }
+    notifyPrefs.enabled = true;
+    lastNotifyAt = 0;
+    toast('継続確認通知をオンにしました');
+  } else {
+    notifyPrefs.enabled = false;
+    closeContinueNotifications();
+    toast('継続確認通知をオフにしました');
+  }
+  saveNotifyPrefs(); renderNotifySettings();
+}
+function onNotifyIntervalChange(v){
+  notifyPrefs.intervalMin = parseInt(v)||60;
+  lastNotifyAt = 0;
+  saveNotifyPrefs(); renderNotifySettings();
+  toast('確認間隔を変更しました');
+}
+async function getSWReg(){
+  if(!('serviceWorker' in navigator)) return null;
+  try{
+    return await navigator.serviceWorker.getRegistration() || await navigator.serviceWorker.register('./sw.js');
+  }catch(e){ return null; }
+}
+async function closeContinueNotifications(){
+  try{
+    const reg = await getSWReg(); if(!reg) return;
+    const list = await reg.getNotifications({tag:'imalog-continue'});
+    list.forEach(n=>n.close());
+  }catch(e){}
+}
+async function testNotify(){
+  if(!('Notification' in window)){ toast('このブラウザは通知に対応していません'); return; }
+  if(Notification.permission!=='granted'){
+    const p = await Notification.requestPermission();
+    if(p!=='granted'){ toast('通知を許可してください'); return; }
+  }
+  const reg = await getSWReg();
+  const title='通知テスト', opts={body:'イマログの通知は正常です', tag:'imalog-continue-test', icon:'./icons/icon-192.png', badge:'./icons/icon-192.png'};
+  try{
+    if(reg){ await reg.showNotification(title, opts); }
+    else { new Notification(title, opts); }
+  }catch(e){ toast('通知の表示に失敗しました'); }
+}
+/* Called on the 15s tick. Notifies at most once per intervalMin per session. */
+async function maybeNotifyContinuing(){
+  if(!notifyPrefs.enabled || !('Notification' in window) || Notification.permission!=='granted') return;
+  const s = sortedRecs(); if(!s.length) return;
+  const sess = sessionsFrom(s);
+  const last = sess[sess.length-1];
+  if(!last.isCurrent) return;
+  const now = Date.now();
+  const startMs = last.start.getTime();
+  if(lastNotifyRecId!==last.rec.id){ lastNotifyRecId=last.rec.id; lastNotifyAt=startMs; }
+  const intervalMs = notifyPrefs.intervalMin*60000;
+  if(now-startMs<intervalMs) return;
+  if(now-lastNotifyAt<intervalMs) return;
+  lastNotifyAt = now;
+  const c = getCat(last.rec.catId);
+  const nm = c?c.nm:'記録中';
+  const reg = await getSWReg(); if(!reg) return;
+  try{
+    await reg.showNotification(`まだ「${nm}」継続中？`, {
+      body:`${fmtElapsed(last.rec.ts)}経過。タップして記録を変更できます`,
+      tag:'imalog-continue',
+      renotify:true,
+      requireInteraction:true,
+      icon:'./icons/icon-192.png',
+      badge:'./icons/icon-192.png',
+      vibrate:[200,100,200],
+      data:{url:'./index.html', recId:last.rec.id},
+      actions:[{action:'continue', title:'継続する'},{action:'change', title:'変更する'}]
+    });
+  }catch(e){}
 }
 
 /* ============================================================
@@ -2083,51 +2201,15 @@ function toast(msg){
 }
 
 /* ============================================================
-   PWA install — build manifest + service worker from Blob URLs
-   so a single HTML file still satisfies installability criteria
-   (works on GitHub Pages / any static HTTPS host, no extra files)
+   PWA — manifest + service worker are real files (required for
+   system notifications on Android/Vivaldi; Blob-URL workers
+   can't reliably show notifications from background)
    ============================================================ */
 (function setupPWA(){
-  try{
-    const manifest = {
-      name:'イマログ', short_name:'イマログ',
-      description:'「今何してる？」を記録・集計・振り返るアプリ',
-      display:'standalone', orientation:'portrait',
-      background_color:'#121212', theme_color:'#121212',
-      start_url: location.pathname + location.search,
-      scope: location.pathname.replace(/[^/]*$/,''),
-      icons:[
-        {src:makeIconDataUrl(192), sizes:'192x192', type:'image/svg+xml', purpose:'any maskable'},
-        {src:makeIconDataUrl(512), sizes:'512x512', type:'image/svg+xml', purpose:'any maskable'}
-      ]
-    };
-    const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
-    const manifestUrl = URL.createObjectURL(manifestBlob);
-    const link=document.createElement('link');
-    link.rel='manifest'; link.href=manifestUrl;
-    document.head.appendChild(link);
-
-    if('serviceWorker' in navigator){
-      const swSrc = `
-        const CACHE='imalog-v1';
-        self.addEventListener('install', e=>{ self.skipWaiting(); });
-        self.addEventListener('activate', e=>{ self.clients.claim(); });
-        self.addEventListener('fetch', e=>{
-          e.respondWith(
-            fetch(e.request).catch(()=> caches.match(e.request).then(r=> r || caches.match('${location.pathname}')))
-          );
-        });
-      `;
-      const swBlob = new Blob([swSrc], {type:'application/javascript'});
-      const swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).catch(()=>{});
-    }
-  }catch(e){ /* PWA setup best-effort; app still works without it */ }
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
 })();
-function makeIconDataUrl(size){
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#121212"/><circle cx="12" cy="12" r="7" fill="none" stroke="#5bb88a" stroke-width="2"/><circle cx="12" cy="12" r="2.4" fill="#5bb88a"/></svg>`;
-  return 'data:image/svg+xml,'+encodeURIComponent(svg);
-}
 window.addEventListener('beforeinstallprompt', e=>{
   e.preventDefault(); deferredPrompt=e;
   document.getElementById('installBtn').classList.add('show');
@@ -2155,8 +2237,9 @@ window.addEventListener('appinstalled', ()=>{
   document.getElementById('togDk').classList.toggle('on', th==='dark');
   document.getElementById('metaTheme').content = th==='dark'?'#121212':'#fdfdfd';
   applyAccent(currentAccent, false);
+  loadNotifyPrefs();
   renderDash();
-  setInterval(()=>{ if(document.getElementById('pg-dash').classList.contains('active')){ renderStatus(); renderTimeline(); } }, 15000);
+  setInterval(()=>{ if(document.getElementById('pg-dash').classList.contains('active')){ renderStatus(); renderTimeline(); } maybeNotifyContinuing(); }, 15000);
 })();
 </script>
 </body>
