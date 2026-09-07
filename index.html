@@ -215,24 +215,21 @@ svg{display:block;}
 .st-hd{display:flex;align-items:center;gap:7px;}
 .st-dot{width:8px;height:8px;border-radius:50%;background:var(--cur-color,var(--text3));flex-shrink:0;}
 .st-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);}
-.st-elapsed{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-family:'DM Mono',monospace;font-size:11px;background:color-mix(in srgb,var(--cur-color,var(--text3)) 13%,transparent);color:var(--cur-color,var(--text3));flex-shrink:0;}
+.st-elapsed{display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:20px;font-family:'DM Mono',monospace;font-size:16px;font-weight:700;background:color-mix(in srgb,var(--cur-color,var(--text3)) 13%,transparent);color:var(--cur-color,var(--text3));flex-shrink:0;}
 .st-main{display:flex;align-items:center;gap:10px;margin-bottom:2px;}
 .st-ic-wrap{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--cur-color,var(--text3)) 16%,transparent);color:var(--cur-color,var(--text3));flex-shrink:0;}
 .st-ic-wrap .ic{width:19px;height:19px;}
 .st-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;line-height:1.15;color:var(--text);}
-.st-sub{font-size:11px;color:var(--text2);margin-top:4px;}
-.d-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px 0;flex-shrink:0;}
-.st-c{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 6px;text-align:center;}
-.st-v{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:3px;}
-.st-v .ic{width:13px;height:13px;color:var(--text2);}
-.st-l{font-size:9px;color:var(--text2);line-height:1.4;}
+.st-sub{font-size:13px;font-weight:500;color:var(--text2);margin-top:5px;}
 .d-tl{margin:8px 14px 0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px;flex-shrink:0;}
 .d-tl-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .d-tl-ti{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);}
-.d-tl-bar{display:flex;width:100%;height:22px;border-radius:6px;overflow:hidden;background:var(--bg3);}
-.d-tl-seg{height:100%;}
-.d-tl-hrs{display:flex;justify-content:space-between;margin-top:4px;}
-.d-tl-hrs span{font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);}
+.d-tl-pie-wrap{display:flex;align-items:center;justify-content:center;padding:2px 0;}
+.d-tl-ring{position:relative;width:168px;height:168px;flex-shrink:0;}
+.d-tl-ring svg{width:100%;height:100%;}
+.d-tl-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:0 34px;}
+.d-tl-center-v{font-family:'DM Mono',monospace;font-size:19px;font-weight:500;color:var(--text);line-height:1.2;}
+.d-tl-center-l{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--text2);margin-top:3px;}
 .d-tl-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
 .leg-it{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);}
 .leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -303,16 +300,15 @@ svg{display:block;}
 .cal-wd-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
 .cal-wd{text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px;}
-.cal-cell{aspect-ratio:1;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:transform .1s;overflow:hidden;}
+.cal-cell{aspect-ratio:1;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:transform .1s;overflow:hidden;min-width:0;min-height:0;}
 .cal-cell.tap{cursor:pointer;}
 .cal-cell.tap:active{transform:scale(.92);}
 .cal-cell.empty{background:transparent;border-color:transparent;}
 .cal-cell.today{border-color:var(--accent);border-width:1.5px;}
+.cal-cell.sel{border-color:var(--accent);border-width:1.5px;background:color-mix(in srgb,var(--accent) 8%,transparent);}
+.cal-mini{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);}
 .cal-daynum{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);z-index:1;}
 .cal-cell.today .cal-daynum{color:var(--accent);font-weight:700;}
-.cal-heat{position:absolute;inset:0;opacity:.85;}
-.cal-dots{display:flex;gap:2px;margin-top:2px;z-index:1;}
-.cal-dot{width:4px;height:4px;border-radius:50%;}
 /* week view */
 .week-day-row{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:7px;transition:transform .1s;}
 .week-day-row.tap:active{transform:scale(.98);}
@@ -509,16 +505,9 @@ svg{display:block;}
         <div class="st-sub" id="stSub">下のボタンから今の行動を記録しよう</div>
       </div>
 
-      <div class="d-stats">
-        <div class="st-c"><div class="st-v" id="sToday">0</div><div class="st-l">今日の<br>記録数</div></div>
-        <div class="st-c"><div class="st-v" id="sTopCat">—</div><div class="st-l">今日の<br>最長行動</div></div>
-        <div class="st-c"><div class="st-v" id="sActiveH">—</div><div class="st-l">記録<br>開始時刻</div></div>
-      </div>
-
       <div class="d-tl">
         <div class="d-tl-hd"><div class="d-tl-ti">今日のタイムライン</div></div>
-        <div class="d-tl-bar" id="tlBar"></div>
-        <div class="d-tl-hrs"><span>0時</span><span>6時</span><span>12時</span><span>18時</span><span>24時</span></div>
+        <div class="d-tl-pie-wrap" id="tlPie"></div>
         <div class="d-tl-legend" id="tlLegend"></div>
       </div>
 
@@ -596,8 +585,8 @@ svg{display:block;}
 
       <div class="my-sec" style="margin-bottom:24px;">
         <div class="my-st">データ管理</div>
-        <div class="my-row tap" onclick="exportCSV()"><svg class="ic"><use href="#ic-download"/></svg><span style="flex:1">CSVエクスポート</span></div>
-        <div class="my-row tap" onclick="triggerCSVImport()"><svg class="ic"><use href="#ic-upload"/></svg><span style="flex:1">CSVインポート</span></div>
+        <div class="my-row tap" onclick="exportCSV()"><svg class="ic"><use href="#ic-upload"/></svg><span style="flex:1">CSVエクスポート</span></div>
+        <div class="my-row tap" onclick="triggerCSVImport()"><svg class="ic"><use href="#ic-download"/></svg><span style="flex:1">CSVインポート</span></div>
         <input type="file" accept=".csv,text/csv,text/plain" id="csvImportInput" style="position:fixed;top:-999px;left:-999px;opacity:0;width:1px;height:1px;" onchange="importCSV(this)">
         <div class="my-row tap danger" onclick="confirmClearAll()"><svg class="ic"><use href="#ic-trash"/></svg><span style="flex:1">すべての記録を削除</span></div>
       </div>
@@ -965,7 +954,7 @@ function logNow(catId){
    DASHBOARD
    ============================================================ */
 function renderDash(){
-  renderStatus(); renderTodayStats(); renderTimeline(); renderActButtons();
+  renderStatus(); renderTimeline(); renderActButtons();
 }
 function renderStatus(){
   const s=sortedRecs();
@@ -997,51 +986,35 @@ function renderStatus(){
   document.getElementById('stSub').textContent = fmtTime(new Date(last.ts))+' から継続中';
   document.getElementById('stElapsed').textContent = fmtElapsed(last.ts);
 }
-function renderTodayStats(){
-  const today=dayKey(new Date());
-  const s=sortedRecs();
-  const todayRecs = s.filter(r=>dayKey(new Date(r.ts))===today);
-  document.getElementById('sToday').textContent = todayRecs.length;
-  if(!todayRecs.length){
-    document.getElementById('sTopCat').textContent='—';
-    document.getElementById('sActiveH').textContent='—';
-    return;
-  }
-  const sess = sessionsFrom(s).filter(x=>dayKey(x.start)===today);
-  const byCat={};
-  sess.forEach(x=>{ byCat[x.rec.catId]=(byCat[x.rec.catId]||0)+x.durMin; });
-  let topId=null, topV=-1;
-  Object.entries(byCat).forEach(([k,v])=>{ if(v>topV){topV=v;topId=k;} });
-  const tc=getCat(topId);
-  document.getElementById('sTopCat').innerHTML = tc ? svgUse(iconOf(tc))+' '+esc(tc.nm) : '—';
-  document.getElementById('sActiveH').textContent = fmtTime(new Date(todayRecs[0].ts));
+/* 24-hour ring: full circle = 24h, recorded spans colored by category */
+function renderDayRingHtml(sess, dayStart, totalMin){
+  const size=168, r=size/2-13, cx=size/2, cy=size/2, circ=2*Math.PI*r;
+  const dayMs=86400000;
+  let segs=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg3)" stroke-width="20"/>`;
+  sess.forEach(x=>{
+    const sMs=Math.max(0,x.start-dayStart), eMs=Math.min(dayMs,x.end-dayStart);
+    if(eMs<=sMs) return;
+    const c=getCat(x.rec.catId);
+    const dash=(eMs-sMs)/dayMs*circ, off=sMs/dayMs*circ;
+    segs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c?c.c:'#555'}" stroke-width="20" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"><title>${c?esc(c.nm):''} ${fmtTime(x.start)}〜</title></circle>`;
+  });
+  const center = sess.length
+    ? `<div class="d-tl-center-v">${fmtDur(totalMin)}</div><div class="d-tl-center-l">記録時間</div>`
+    : `<div class="d-tl-center-v" style="font-size:12px;color:var(--text3);">まだ記録が<br>ありません</div>`;
+  return `<div class="d-tl-ring"><svg viewBox="0 0 ${size} ${size}">${segs}</svg><div class="d-tl-center">${center}</div></div>`;
 }
 function renderTimeline(){
   const today=dayKey(new Date());
-  const bar=document.getElementById('tlBar'), legend=document.getElementById('tlLegend');
-  bar.innerHTML=''; legend.innerHTML='';
+  const pie=document.getElementById('tlPie'), legend=document.getElementById('tlLegend');
+  pie.innerHTML=''; legend.innerHTML='';
   const sess=sessionsFrom(sortedRecs()).filter(x=>dayKey(x.start)===today);
-  if(!sess.length){
-    bar.innerHTML=`<div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3);">まだ記録がありません</div>`;
-    return;
-  }
   const dayStart=new Date(); dayStart.setHours(0,0,0,0);
   const dayMs=86400000;
+  const totalMin=sess.reduce((a,x)=>a+Math.max(0,Math.min(dayMs,x.end-dayStart)-Math.max(0,x.start-dayStart))/60000,0);
+  pie.innerHTML=renderDayRingHtml(sess, dayStart, totalMin);
+  if(!sess.length) return;
   const usedCats=new Set();
-  const frag=document.createDocumentFragment();
-  sess.forEach(x=>{
-    const startMs=Math.max(0,x.start-dayStart), endMs=Math.min(dayMs,x.end-dayStart);
-    const widthPct=Math.max(0.3,(endMs-startMs)/dayMs*100);
-    const c=getCat(x.rec.catId);
-    const seg=document.createElement('div');
-    seg.className='d-tl-seg';
-    seg.style.width=widthPct+'%';
-    seg.style.background=c?c.c:'#555';
-    seg.title=(c?c.nm:'')+' '+fmtTime(x.start)+'〜';
-    frag.appendChild(seg);
-    if(c) usedCats.add(c.id);
-  });
-  bar.appendChild(frag);
+  sess.forEach(x=>{ const c=getCat(x.rec.catId); if(c) usedCats.add(c.id); });
   usedCats.forEach(id=>{
     const c=getCat(id); if(!c) return;
     const it=document.createElement('div'); it.className='leg-it';
@@ -1221,6 +1194,7 @@ function deleteFromManualDr(){
    ============================================================ */
 let repMode='cal';       // 'cal' | 'week' | 'month'
 let calMonthOffset=0;    // for calendar & month view
+let calSelectedDay=null; // dayKey tapped in calendar view (bottom shows that day)
 let weekOffset=0;        // for week view
 let weekChartMode='bar', monthChartMode='bar';  // 'bar' | 'pie'
 
@@ -1320,14 +1294,13 @@ function renderCalView(body){
     dayTotals[dk].total += x.durMin;
     dayTotals[dk].cats[x.rec.catId] = (dayTotals[dk].cats[x.rec.catId]||0)+x.durMin;
   });
-  const maxDayTotal = Math.max(1, ...Object.values(dayTotals).map(d=>d.total));
 
   const wdLabels = weekStart===1 ? ['月','火','水','木','金','土','日'] : ['日','月','火','水','木','金','土'];
 
   let html = `<div class="rep-nav">
-    <button class="rep-nb" onclick="calMonthOffset--;renderReport()">${svgUse('ic-chevron-l')}</button>
+    <button class="rep-nb" onclick="calMonthOffset--;calSelectedDay=null;renderReport()">${svgUse('ic-chevron-l')}</button>
     <div class="rep-period-ti">${y}年${m+1}月</div>
-    <button class="rep-nb" onclick="calMonthOffset++;renderReport()">${svgUse('ic-chevron-r')}</button>
+    <button class="rep-nb" onclick="calMonthOffset++;calSelectedDay=null;renderReport()">${svgUse('ic-chevron-r')}</button>
   </div>
   <div class="cal-wd-row">${wdLabels.map(w=>`<div class="cal-wd">${w}</div>`).join('')}</div>
   <div class="cal-grid">`;
@@ -1339,33 +1312,65 @@ function renderCalView(body){
     const dk=dayKey(dateObj);
     const info=dayTotals[dk];
     const isToday = dk===todayKey;
-    const heatOpacity = info ? Math.min(0.9, 0.15 + (info.total/maxDayTotal)*0.75) : 0;
-    let dotsHtml='';
-    if(info){
-      const topCats = Object.entries(info.cats).sort((a,b)=>b[1]-a[1]).slice(0,3);
-      dotsHtml = `<div class="cal-dots">${topCats.map(([cid])=>{ const c=getCat(cid); return `<span class="cal-dot" style="background:${c?c.c:'#7a7a7a'}"></span>`; }).join('')}</div>`;
-    }
-    html += `<div class="cal-cell ${info?'tap':''} ${isToday?'today':''}" ${info?`onclick="openDayDetail('${dk}')"`:''}>
-      ${info?`<div class="cal-heat" style="background:${topCatColor(info.cats)};opacity:${heatOpacity}"></div>`:''}
-      <span class="cal-daynum">${d}</span>${dotsHtml}
+    const isSel = dk===calSelectedDay;
+    html += `<div class="cal-cell tap ${isToday?'today':''} ${isSel?'sel':''}" onclick="selectCalDay('${dk}')">
+      ${info?renderMiniPieHtml(info.cats, info.total):''}
+      <span class="cal-daynum">${d}</span>
     </div>`;
   }
   html += `</div>`;
 
-  // month summary below calendar
-  const monthByCat = catBreakdown(sess);
-  const monthTotal = sess.reduce((a,x)=>a+x.durMin,0);
-  html += `<div class="rep-sec-title">${m+1}月のカテゴリ別内訳</div>
-  <div class="rep-cat-wrap">${renderCatBreakdownHtml(monthByCat, monthTotal)}</div>
-  <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-download')}CSVでエクスポート</button>`;
+  // bottom: tapped day detail, or month summary
+  if(calSelectedDay){
+    html += renderCalDayDetailHtml(calSelectedDay);
+  } else {
+    const monthByCat = catBreakdown(sess);
+    const monthTotal = sess.reduce((a,x)=>a+x.durMin,0);
+    html += `<div class="rep-sec-title">${m+1}月のカテゴリ別内訳</div>
+    <div class="rep-cat-wrap">${renderCatBreakdownHtml(monthByCat, monthTotal)}</div>
+    <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-upload')}CSVでエクスポート</button>`;
+  }
 
   body.innerHTML = html;
 }
-function topCatColor(catsObj){
+/* Mini donut for one calendar day cell (composition of that day's total) */
+function renderMiniPieHtml(byCat, totalMin){
+  const size=36, r=15, cx=18, cy=18, circ=2*Math.PI*r;
+  let segs=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg3)" stroke-width="5.5"/>`;
+  if(totalMin>0){
+    let off=0;
+    Object.entries(byCat).sort((a,b)=>b[1]-a[1]).forEach(([id,mins])=>{
+      const c=getCat(id);
+      const frac=mins/totalMin, dash=frac*circ;
+      if(dash<=0) return;
+      segs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c?c.c:'#7a7a7a'}" stroke-width="5.5" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      off+=dash;
+    });
+  }
+  return `<svg class="cal-mini" viewBox="0 0 ${size} ${size}">${segs}</svg>`;
+}
+function selectCalDay(dk){
+  calSelectedDay = (calSelectedDay===dk) ? null : dk;
+  renderReport();
+}
+function renderCalDayDetailHtml(dk){
+  const dateObj=new Date(dk+'T00:00:00');
+  const dayStart=new Date(dateObj); dayStart.setHours(0,0,0,0);
+  const dayEnd=new Date(dayStart); dayEnd.setDate(dayStart.getDate()+1);
+  const sess=sessionsInRange(dayStart, dayEnd);
+  const totalMin=sess.reduce((a,x)=>a+x.durMin,0);
+  const byCat=catBreakdown(sess);
   let topId=null, topV=-1;
-  Object.entries(catsObj).forEach(([k,v])=>{ if(v>topV){topV=v;topId=k;} });
-  const c=getCat(topId);
-  return c?c.c:'#7a7a7a';
+  Object.entries(byCat).forEach(([k,v])=>{ if(v>topV){topV=v;topId=k;} });
+  const topC=getCat(topId);
+  return `<div class="rep-sec-title">${dateObj.getMonth()+1}月${dateObj.getDate()}日（${WD[dateObj.getDay()]}）の内訳</div>
+  <div class="rep-hero">
+    <div class="rep-hcard"><div class="rep-hl">合計時間</div><div class="rep-hv">${totalMin>0?fmtDur(totalMin):'—'}</div><div class="rep-hsub">${sess.length}件の記録</div></div>
+    <div class="rep-hcard"><div class="rep-hl">最多カテゴリ</div><div class="rep-hv" style="font-size:15px">${topC?svgUse(iconOf(topC))+' '+esc(topC.nm):'—'}</div><div class="rep-hsub">${topC?fmtDur(topV):''}</div></div>
+  </div>
+  <div class="rep-cat-wrap">${renderCatBreakdownHtml(byCat, totalMin)}</div>
+  <div style="text-align:center;font-size:10px;color:var(--text3);margin-top:8px;">同じ日付をもう一度タップで月全体に戻る</div>
+  <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-upload')}CSVでエクスポート</button>`;
 }
 
 /* ---------- WEEK VIEW ---------- */
@@ -1429,7 +1434,7 @@ function renderWeekView(body){
     html += `<div class="rep-cat-wrap" style="padding:20px;">${renderPieChartHtml(byCat, totalMin)}</div>`;
   }
   html += `<div class="rep-cat-wrap">${renderCatBreakdownHtml(byCat, totalMin)}</div>
-  <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-download')}CSVでエクスポート</button>`;
+  <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-upload')}CSVでエクスポート</button>`;
 
   body.innerHTML = html;
 }
@@ -1450,9 +1455,9 @@ function renderMonthView(body){
   const daysInMonth = new Date(y,m+1,0).getDate();
 
   let html = `<div class="rep-nav">
-    <button class="rep-nb" onclick="calMonthOffset--;renderReport()">${svgUse('ic-chevron-l')}</button>
+    <button class="rep-nb" onclick="calMonthOffset--;calSelectedDay=null;renderReport()">${svgUse('ic-chevron-l')}</button>
     <div class="rep-period-ti">${y}年${m+1}月</div>
-    <button class="rep-nb" onclick="calMonthOffset++;renderReport()">${svgUse('ic-chevron-r')}</button>
+    <button class="rep-nb" onclick="calMonthOffset++;calSelectedDay=null;renderReport()">${svgUse('ic-chevron-r')}</button>
   </div>`;
 
   html += `<div class="rep-hero">
@@ -1501,7 +1506,7 @@ function renderMonthView(body){
     html += `<div class="rep-cat-wrap" style="padding:20px;">${renderPieChartHtml(byCat, totalMin)}</div>`;
   }
   html += `<div class="rep-cat-wrap">${renderCatBreakdownHtml(byCat, totalMin)}</div>
-  <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-download')}CSVでエクスポート</button>`;
+  <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-upload')}CSVでエクスポート</button>`;
 
   body.innerHTML = html;
 }
