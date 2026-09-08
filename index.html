@@ -228,7 +228,6 @@ svg{display:block;}
 .d-tl-ring{position:relative;width:204px;height:204px;flex-shrink:0;}
 .d-tl-ring svg{width:100%;height:100%;display:block;}
 .ring-track{stroke:var(--bg3);}
-.d-tl-cap{text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--text3);margin-top:6px;}
 .d-tl-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
 .leg-it{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);}
 .leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -299,7 +298,7 @@ svg{display:block;}
 .cal-wd-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
 .cal-wd{text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px;align-content:start;grid-auto-rows:auto;}
-.cal-cell{aspect-ratio:1;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:transform .1s;overflow:hidden;min-width:0;min-height:0;}
+.cal-cell{height:clamp(46px,12.5vw,60px);border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:transform .1s;overflow:hidden;min-width:0;min-height:0;}
 .cal-cell.tap{cursor:pointer;}
 .cal-cell.tap:active{transform:scale(.92);}
 .cal-cell.empty{background:transparent;border-color:transparent;}
@@ -565,6 +564,7 @@ svg{display:block;}
         <div class="my-st">設定</div>
         <div class="my-row tap" onclick="toggleTheme()"><svg class="ic" id="myThIc"><use href="#ic-moon"/></svg><span style="flex:1">テーマ</span><span class="my-rv" id="thLbl" style="margin-right:8px">ダーク</span><div class="tog on" id="togDk"><div class="tog-k"></div></div></div>
         <div class="my-row tap" onclick="toggleWeekStart()"><svg class="ic"><use href="#ic-calendar"/></svg><span style="flex:1">カレンダー週始まり</span><span class="my-rv" id="weekStartLbl">月曜始まり</span></div>
+        <div class="my-row tap" onclick="toggleRingOuter()"><svg class="ic"><use href="#ic-pie"/></svg><span style="flex:1">円グラフの外側</span><span class="my-rv" id="ringOuterLbl">午前</span></div>
         <div class="my-row"><span style="flex:1">アクセントカラー</span><div class="acc-picker" id="myAccPicker"></div></div>
       </div>
 
@@ -587,6 +587,9 @@ svg{display:block;}
         <div class="my-row tap" onclick="exportCSV()"><svg class="ic"><use href="#ic-upload"/></svg><span style="flex:1">CSVエクスポート</span></div>
         <div class="my-row tap" onclick="triggerCSVImport()"><svg class="ic"><use href="#ic-download"/></svg><span style="flex:1">CSVインポート</span></div>
         <input type="file" accept=".csv,text/csv,text/plain" id="csvImportInput" style="position:fixed;top:-999px;left:-999px;opacity:0;width:1px;height:1px;" onchange="importCSV(this)">
+        <div class="my-row tap" onclick="triggerSleepImport()"><svg class="ic"><use href="#ic-sleep"/></svg><span style="flex:1">ねむろくインポート</span></div>
+        <input type="file" accept=".csv,text/csv,text/plain" id="sleepImportInput" style="position:fixed;top:-999px;left:-999px;opacity:0;width:1px;height:1px;" onchange="importSleepCSV(this)">
+        <div class="notify-note">CSV入出力はいまろぐ形式専用。睡眠データの補正は「ねむろくインポート」から取り込むと睡眠記録に変換され、記録一覧に追加されます。</div>
         <div class="my-row tap danger" onclick="confirmClearAll()"><svg class="ic"><use href="#ic-trash"/></svg><span style="flex:1">すべての記録を削除</span></div>
       </div>
     </div>
@@ -717,7 +720,7 @@ svg{display:block;}
    イマログ — 今何してる？記録アプリ
    ============================================================ */
 
-const LS_RECS='imalog_recs', LS_CATS='imalog_cats', LS_TH='imalog_theme', LS_ACC='imalog_accent', LS_WS='imalog_weekstart', LS_NOTIFY='imalog_notify';
+const LS_RECS='imalog_recs', LS_CATS='imalog_cats', LS_TH='imalog_theme', LS_ACC='imalog_accent', LS_WS='imalog_weekstart', LS_NOTIFY='imalog_notify', LS_RING='imalog_ring';
 
 const DEFAULT_CATS = [
   {id:'work',  nm:'仕事', ic:'ic-work',   c:'#6b8fd4'},
@@ -832,6 +835,7 @@ let recs = JSON.parse(localStorage.getItem(LS_RECS) || '[]');
 let cats = JSON.parse(localStorage.getItem(LS_CATS) || 'null') || DEFAULT_CATS.slice();
 let currentAccent = localStorage.getItem(LS_ACC) || '#5bb88a';
 let weekStart = parseInt(localStorage.getItem(LS_WS) || '1');
+let ringOuter = localStorage.getItem(LS_RING) || 'am'; // 'am' = outer:AM/inner:PM, 'pm' = swapped
 let notifyPrefs = JSON.parse(localStorage.getItem(LS_NOTIFY) || 'null') || {enabled:false, intervalMin:60};
 let lastNotifyRecId = null, lastNotifyAt = 0;
 let editingCatId = null, editingRecId = null;
@@ -1005,13 +1009,15 @@ function renderDayRingHtml(sess, dayStart){
   const cO=2*Math.PI*rO, cI=2*Math.PI*rI;
   const noon=new Date(dayStart); noon.setHours(12,0,0,0);
   const dayEnd=new Date(dayStart); dayEnd.setDate(dayStart.getDate()+1);
+  const amFirst = ringOuter!=='pm';
+  const oS=amFirst?dayStart:noon, oE=amFirst?noon:dayEnd;
+  const iS=amFirst?noon:dayStart, iE=amFirst?dayEnd:noon;
   const segs=`<circle cx="${cx}" cy="${cy}" r="${rO}" fill="none" class="ring-track" stroke-width="${sw}"/>`
     +`<circle cx="${cx}" cy="${cy}" r="${rI}" fill="none" class="ring-track" stroke-width="${sw}"/>`
-    +ringSegs12(sess, dayStart, noon, cx, cy, rO, cO, sw)
-    +ringSegs12(sess, noon, dayEnd, cx, cy, rI, cI, sw);
+    +ringSegs12(sess, oS, oE, cx, cy, rO, cO, sw)
+    +ringSegs12(sess, iS, iE, cx, cy, rI, cI, sw);
   const empty=!sess.length?`<div style="text-align:center;font-size:10px;color:var(--text3);margin-top:6px;">まだ記録がありません</div>`:'';
-  return `<div><div class="d-tl-ring"><svg viewBox="0 0 ${size} ${size}">${segs}</svg></div>`
-    +`<div class="d-tl-cap">外側：午前　内側：午後</div>${empty}</div>`;
+  return `<div><div class="d-tl-ring"><svg viewBox="0 0 ${size} ${size}">${segs}</svg></div>${empty}</div>`;
 }
 function renderTimeline(){
   const today=dayKey(new Date());
@@ -1357,10 +1363,13 @@ function renderMiniPieHtml(sess, ds){
   const cO=2*Math.PI*rO, cI=2*Math.PI*rI;
   const noon=new Date(ds); noon.setHours(12,0,0,0);
   const de=new Date(ds); de.setDate(ds.getDate()+1);
+  const amFirst = ringOuter!=='pm';
+  const oS=amFirst?ds:noon, oE=amFirst?noon:de;
+  const iS=amFirst?noon:ds, iE=amFirst?de:noon;
   const segs=`<circle cx="${cx}" cy="${cy}" r="${rO}" fill="none" class="ring-track" stroke-width="${sw}"/>`
     +`<circle cx="${cx}" cy="${cy}" r="${rI}" fill="none" class="ring-track" stroke-width="${sw}"/>`
-    +ringSegs12(sess, ds, noon, cx, cy, rO, cO, sw)
-    +ringSegs12(sess, noon, de, cx, cy, rI, cI, sw);
+    +ringSegs12(sess, oS, oE, cx, cy, rO, cO, sw)
+    +ringSegs12(sess, iS, iE, cx, cy, rI, cI, sw);
   return `<svg class="cal-mini" viewBox="0 0 ${size} ${size}">${segs}</svg>`;
 }
 function selectCalDay(dk){
@@ -1582,6 +1591,34 @@ function exportCSV(){
   toast('CSVを書き出しました');
 }
 function triggerCSVImport(){ document.getElementById('csvImportInput').click(); }
+function triggerSleepImport(){ document.getElementById('sleepImportInput').click(); }
+function importSleepCSV(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const rawLines = e.target.result.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+      if(!rawLines.length){ toast('CSVが空です'); input.value=''; return; }
+      const header = parseCsvLine(rawLines[0]).map(h=>h.toLowerCase());
+      if(!(header.includes('starttime') && header.includes('endtime') && header.includes('type'))){
+        toast('睡眠データのCSVではありません');
+      } else {
+        importHealthConnectSleep(rawLines, header);
+      }
+    }catch(err){
+      toast('CSVの読み込みに失敗しました');
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+/* import後に開いている画面を更新（記録一覧・レポートにも即反映） */
+function afterImportRefresh(){
+  renderDash();
+  if(document.getElementById('pg-rec').classList.contains('active')){ recRendered=0; document.getElementById('recL').dataset.lastDay=''; renderRec(); }
+  if(document.getElementById('pg-rep').classList.contains('active')) renderReport();
+  if(document.getElementById('pg-my').classList.contains('active')) renderMy();
+}
 
 /* simple CSV line parser supporting quoted fields */
 function parseCsvLine(line){
@@ -1610,11 +1647,11 @@ function importCSV(input){
       if(!rawLines.length){ toast('CSVが空です'); input.value=''; return; }
       const header = parseCsvLine(rawLines[0]).map(h=>h.toLowerCase());
 
-      // detect Health Connect–style export: ID,StartTime,EndTime,Duration(min),Type,Source
-      const isHealthConnect = header.includes('starttime') && header.includes('endtime') && header.includes('type');
+      // いまろぐ形式のみ扱う。睡眠データは「ねむろくインポート」へ案内
+      const isSleepData = header.includes('starttime') && header.includes('endtime') && header.includes('type');
 
-      if(isHealthConnect){
-        importHealthConnectSleep(rawLines, header);
+      if(isSleepData){
+        toast('睡眠データは「ねむろくインポート」から取り込んでください');
       } else {
         importImalogCSV(rawLines, header);
       }
@@ -1647,16 +1684,16 @@ function importImalogCSV(rawLines, header){
     recs.push(rec);
     added++;
   }
-  save(); saveCats(); renderDash();
+  save(); saveCats(); afterImportRefresh();
   toast(`${added}件インポートしました`);
 }
 
-/* ---------- Health Connect 形式 (睡眠データ) — 上書き補正インポート ----------
+/* ---------- ねむろくインポート用： Health Connect 形式 (睡眠データ) ----------
    ID,StartTime,EndTime,Duration(min),Type,Source
    - Type が "sess" 以外の行はスキップ
-   - 各行を「睡眠」カテゴリの固定区間レコード(endTs付き)として取り込む
+   - 各行を「睡眠」カテゴリの固定区間レコード(endTs付き)に変換して記録一覧に追加
    - 取り込む区間と時間的に重なる既存レコードは、睡眠を優先して
-     上書き・分割（削除 or 時刻をずらす）する
+      上書き・分割（削除 or 時刻をずらす）する
    ------------------------------------------------------------------- */
 function importHealthConnectSleep(rawLines, header){
   const idxStart = header.indexOf('starttime');
@@ -1695,7 +1732,7 @@ function importHealthConnectSleep(rawLines, header){
     applySleepInterval(iv.start, iv.end, sleepCat.id);
   });
 
-  save(); saveCats(); renderDash();
+  save(); saveCats(); afterImportRefresh();
   toast(`睡眠データを${intervals.length}件インポートしました${skipped?`（${skipped}件はスキップ）`:''}`);
 }
 
@@ -1772,6 +1809,18 @@ function renderMy(){
   document.getElementById('weekStartLbl').textContent = weekStart===1?'月曜始まり':'日曜始まり';
   renderAccentPicker();
   renderNotifySettings();
+  renderRingSetting();
+}
+function renderRingSetting(){
+  document.getElementById('ringOuterLbl').textContent = ringOuter==='pm'?'午後':'午前';
+}
+function toggleRingOuter(){
+  ringOuter = ringOuter==='pm'?'am':'pm';
+  localStorage.setItem(LS_RING, ringOuter);
+  renderRingSetting();
+  renderDash();
+  if(document.getElementById('pg-rep').classList.contains('active')) renderReport();
+  toast(`円グラフの外側を${ringOuter==='pm'?'午後':'午前'}にしました`);
 }
 
 /* ============================================================
