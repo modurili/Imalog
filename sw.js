@@ -3,7 +3,7 @@
    Pushサーバーは使わないローカル通知方式のため `push` ハンドラは持たない。
    ブラウザがバックグラウンドで動いている間のみ通知可能。 */
 
-const CACHE = 'imalog-v2';
+const CACHE = 'imalog-v3';
 const PRECACHE = [
   './',
   './index.html',

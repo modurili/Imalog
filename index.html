@@ -1331,6 +1331,7 @@ function renderCalView(body){
 
   for(let i=0;i<leadBlanks;i++) html += `<div class="cal-cell empty"></div>`;
   const todayKey = dayKey(now);
+  let cellCount = leadBlanks;
   for(let d=1;d<=daysInMonth;d++){
     const dateObj=new Date(y,m,d);
     const dk=dayKey(dateObj);
@@ -1341,6 +1342,11 @@ function renderCalView(body){
       ${info?renderMiniPieHtml(sess, dateObj):''}
       <span class="cal-daynum">${d}</span>
     </div>`;
+    cellCount++;
+  }
+  // 4行で終わる月（2月など）は空白の5行目を追加し、下の表示位置を安定させる
+  if(Math.ceil(cellCount/7)<5){
+    for(let i=cellCount;i<35;i++) html += `<div class="cal-cell empty"></div>`;
   }
   html += `</div>`;
 
