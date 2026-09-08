@@ -225,11 +225,10 @@ svg{display:block;}
 .d-tl-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .d-tl-ti{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);}
 .d-tl-pie-wrap{display:flex;align-items:center;justify-content:center;padding:2px 0;}
-.d-tl-ring{position:relative;width:168px;height:168px;flex-shrink:0;}
-.d-tl-ring svg{width:100%;height:100%;}
-.d-tl-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:0 34px;}
-.d-tl-center-v{font-family:'DM Mono',monospace;font-size:19px;font-weight:500;color:var(--text);line-height:1.2;}
-.d-tl-center-l{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--text2);margin-top:3px;}
+.d-tl-ring{position:relative;width:204px;height:204px;flex-shrink:0;}
+.d-tl-ring svg{width:100%;height:100%;display:block;}
+.ring-track{stroke:var(--bg3);}
+.d-tl-cap{text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--text3);margin-top:6px;}
 .d-tl-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
 .leg-it{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);}
 .leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -299,7 +298,7 @@ svg{display:block;}
 /* calendar grid (month view) */
 .cal-wd-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
 .cal-wd{text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px;align-content:start;grid-auto-rows:auto;}
 .cal-cell{aspect-ratio:1;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:transform .1s;overflow:hidden;min-width:0;min-height:0;}
 .cal-cell.tap{cursor:pointer;}
 .cal-cell.tap:active{transform:scale(.92);}
@@ -307,7 +306,7 @@ svg{display:block;}
 .cal-cell.today{border-color:var(--accent);border-width:1.5px;}
 .cal-cell.sel{border-color:var(--accent);border-width:1.5px;background:color-mix(in srgb,var(--accent) 8%,transparent);}
 .cal-mini{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);}
-.cal-daynum{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);z-index:1;}
+.cal-daynum{font-family:'DM Mono',monospace;font-size:11px;line-height:1.4;color:var(--text2);z-index:1;background:var(--bg2);border-radius:5px;padding:0 3px;}
 .cal-cell.today .cal-daynum{color:var(--accent);font-weight:700;}
 /* week view */
 .week-day-row{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:7px;transition:transform .1s;}
@@ -986,22 +985,33 @@ function renderStatus(){
   document.getElementById('stSub').textContent = fmtTime(new Date(last.ts))+' から継続中';
   document.getElementById('stElapsed').textContent = fmtElapsed(last.ts);
 }
-/* 24-hour ring: full circle = 24h, recorded spans colored by category */
-function renderDayRingHtml(sess, dayStart, totalMin){
-  const size=168, r=size/2-13, cx=size/2, cy=size/2, circ=2*Math.PI*r;
-  const dayMs=86400000;
-  let segs=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg3)" stroke-width="20"/>`;
+/* Dual 12-hour rings: outer = AM (0-12h), inner = PM (12-24h). Full circle = 12h. */
+function ringSegs12(sess, rStart, rEnd, cx, cy, r, circ, sw){
+  const span=rEnd-rStart;
+  let s='';
   sess.forEach(x=>{
-    const sMs=Math.max(0,x.start-dayStart), eMs=Math.min(dayMs,x.end-dayStart);
+    const sMs=Math.max(0,x.start-rStart), eMs=Math.min(span,x.end-rStart);
     if(eMs<=sMs) return;
     const c=getCat(x.rec.catId);
-    const dash=(eMs-sMs)/dayMs*circ, off=sMs/dayMs*circ;
-    segs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c?c.c:'#555'}" stroke-width="20" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"><title>${c?esc(c.nm):''} ${fmtTime(x.start)}〜</title></circle>`;
+    const dash=(eMs-sMs)/span*circ, off=sMs/span*circ;
+    if(dash<=0) return;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c?c.c:'#555'}" stroke-width="${sw}" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"><title>${c?esc(c.nm):''} ${fmtTime(x.start)}〜</title></circle>`;
   });
-  const center = sess.length
-    ? `<div class="d-tl-center-v">${fmtDur(totalMin)}</div><div class="d-tl-center-l">記録時間</div>`
-    : `<div class="d-tl-center-v" style="font-size:12px;color:var(--text3);">まだ記録が<br>ありません</div>`;
-  return `<div class="d-tl-ring"><svg viewBox="0 0 ${size} ${size}">${segs}</svg><div class="d-tl-center">${center}</div></div>`;
+  return s;
+}
+function renderDayRingHtml(sess, dayStart){
+  const size=204, cx=size/2, cy=size/2;
+  const rO=size/2-11, rI=rO-25, sw=17;
+  const cO=2*Math.PI*rO, cI=2*Math.PI*rI;
+  const noon=new Date(dayStart); noon.setHours(12,0,0,0);
+  const dayEnd=new Date(dayStart); dayEnd.setDate(dayStart.getDate()+1);
+  const segs=`<circle cx="${cx}" cy="${cy}" r="${rO}" fill="none" class="ring-track" stroke-width="${sw}"/>`
+    +`<circle cx="${cx}" cy="${cy}" r="${rI}" fill="none" class="ring-track" stroke-width="${sw}"/>`
+    +ringSegs12(sess, dayStart, noon, cx, cy, rO, cO, sw)
+    +ringSegs12(sess, noon, dayEnd, cx, cy, rI, cI, sw);
+  const empty=!sess.length?`<div style="text-align:center;font-size:10px;color:var(--text3);margin-top:6px;">まだ記録がありません</div>`:'';
+  return `<div><div class="d-tl-ring"><svg viewBox="0 0 ${size} ${size}">${segs}</svg></div>`
+    +`<div class="d-tl-cap">外側：午前　内側：午後</div>${empty}</div>`;
 }
 function renderTimeline(){
   const today=dayKey(new Date());
@@ -1009,9 +1019,7 @@ function renderTimeline(){
   pie.innerHTML=''; legend.innerHTML='';
   const sess=sessionsFrom(sortedRecs()).filter(x=>dayKey(x.start)===today);
   const dayStart=new Date(); dayStart.setHours(0,0,0,0);
-  const dayMs=86400000;
-  const totalMin=sess.reduce((a,x)=>a+Math.max(0,Math.min(dayMs,x.end-dayStart)-Math.max(0,x.start-dayStart))/60000,0);
-  pie.innerHTML=renderDayRingHtml(sess, dayStart, totalMin);
+  pie.innerHTML=renderDayRingHtml(sess, dayStart);
   if(!sess.length) return;
   const usedCats=new Set();
   sess.forEach(x=>{ const c=getCat(x.rec.catId); if(c) usedCats.add(c.id); });
@@ -1222,10 +1230,21 @@ function setRepModeTabsInit(){
 function sessionsInRange(start,end){
   return sessionsFrom(sortedRecs()).filter(x=>x.start<end && x.end>start);
 }
-function catBreakdown(sess){
-  const byCat={};
-  sess.forEach(x=>{ byCat[x.rec.catId]=(byCat[x.rec.catId]||0)+x.durMin; });
-  return byCat;
+/* Clip one session's minutes to [s,e). Fixes day totals exceeding 24h
+   when a session (esp. overnight fixed records) spans the boundary. */
+function clipMin(x, s, e){
+  return Math.max(0, Math.min(x.end, e) - Math.max(x.start, s)) / 60000;
+}
+/* Durations clipped to [s,e): {byCat, total}. Use for every ranged total. */
+function rangeStats(sess, s, e){
+  const byCat={}; let total=0;
+  sess.forEach(x=>{
+    const m=clipMin(x, s, e);
+    if(m<=0) return;
+    total+=m;
+    byCat[x.rec.catId]=(byCat[x.rec.catId]||0)+m;
+  });
+  return {byCat, total};
 }
 function renderCatBreakdownHtml(byCat, totalMin){
   let html='';
@@ -1287,13 +1306,12 @@ function renderCalView(body){
   const daysInMonth = new Date(y,m+1,0).getDate();
 
   const sess = sessionsInRange(monthStart, monthEnd);
-  const dayTotals = {}; // dayKey -> {total, byCat}
-  sess.forEach(x=>{
-    const dk=dayKey(x.start);
-    if(!dayTotals[dk]) dayTotals[dk]={total:0, cats:{}};
-    dayTotals[dk].total += x.durMin;
-    dayTotals[dk].cats[x.rec.catId] = (dayTotals[dk].cats[x.rec.catId]||0)+x.durMin;
-  });
+  const dayTotals = {}; // dayKey -> {total, byCat} (clipped to each day so totals never exceed 24h)
+  for(let d=1; d<=daysInMonth; d++){
+    const ds=new Date(y,m,d), de=new Date(y,m,d+1);
+    const st=rangeStats(sess, ds, de);
+    if(st.total>0) dayTotals[dayKey(ds)]={total:st.total, cats:st.byCat};
+  }
 
   const wdLabels = weekStart===1 ? ['月','火','水','木','金','土','日'] : ['日','月','火','水','木','金','土'];
 
@@ -1314,7 +1332,7 @@ function renderCalView(body){
     const isToday = dk===todayKey;
     const isSel = dk===calSelectedDay;
     html += `<div class="cal-cell tap ${isToday?'today':''} ${isSel?'sel':''}" onclick="selectCalDay('${dk}')">
-      ${info?renderMiniPieHtml(info.cats, info.total):''}
+      ${info?renderMiniPieHtml(sess, dateObj):''}
       <span class="cal-daynum">${d}</span>
     </div>`;
   }
@@ -1324,29 +1342,25 @@ function renderCalView(body){
   if(calSelectedDay){
     html += renderCalDayDetailHtml(calSelectedDay);
   } else {
-    const monthByCat = catBreakdown(sess);
-    const monthTotal = sess.reduce((a,x)=>a+x.durMin,0);
+    const mst = rangeStats(sess, monthStart, monthEnd);
     html += `<div class="rep-sec-title">${m+1}月のカテゴリ別内訳</div>
-    <div class="rep-cat-wrap">${renderCatBreakdownHtml(monthByCat, monthTotal)}</div>
+    <div class="rep-cat-wrap">${renderCatBreakdownHtml(mst.byCat, mst.total)}</div>
     <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-upload')}CSVでエクスポート</button>`;
   }
 
   body.innerHTML = html;
 }
-/* Mini donut for one calendar day cell (composition of that day's total) */
-function renderMiniPieHtml(byCat, totalMin){
-  const size=36, r=15, cx=18, cy=18, circ=2*Math.PI*r;
-  let segs=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg3)" stroke-width="5.5"/>`;
-  if(totalMin>0){
-    let off=0;
-    Object.entries(byCat).sort((a,b)=>b[1]-a[1]).forEach(([id,mins])=>{
-      const c=getCat(id);
-      const frac=mins/totalMin, dash=frac*circ;
-      if(dash<=0) return;
-      segs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c?c.c:'#7a7a7a'}" stroke-width="5.5" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"/>`;
-      off+=dash;
-    });
-  }
+/* Mini dual 12h rings for one calendar day cell: outer = AM, inner = PM */
+function renderMiniPieHtml(sess, ds){
+  const size=36, cx=18, cy=18;
+  const rO=15.5, rI=10, sw=3.6;
+  const cO=2*Math.PI*rO, cI=2*Math.PI*rI;
+  const noon=new Date(ds); noon.setHours(12,0,0,0);
+  const de=new Date(ds); de.setDate(ds.getDate()+1);
+  const segs=`<circle cx="${cx}" cy="${cy}" r="${rO}" fill="none" class="ring-track" stroke-width="${sw}"/>`
+    +`<circle cx="${cx}" cy="${cy}" r="${rI}" fill="none" class="ring-track" stroke-width="${sw}"/>`
+    +ringSegs12(sess, ds, noon, cx, cy, rO, cO, sw)
+    +ringSegs12(sess, noon, de, cx, cy, rI, cI, sw);
   return `<svg class="cal-mini" viewBox="0 0 ${size} ${size}">${segs}</svg>`;
 }
 function selectCalDay(dk){
@@ -1358,8 +1372,8 @@ function renderCalDayDetailHtml(dk){
   const dayStart=new Date(dateObj); dayStart.setHours(0,0,0,0);
   const dayEnd=new Date(dayStart); dayEnd.setDate(dayStart.getDate()+1);
   const sess=sessionsInRange(dayStart, dayEnd);
-  const totalMin=sess.reduce((a,x)=>a+x.durMin,0);
-  const byCat=catBreakdown(sess);
+  const st=rangeStats(sess, dayStart, dayEnd);
+  const totalMin=st.total, byCat=st.byCat;
   let topId=null, topV=-1;
   Object.entries(byCat).forEach(([k,v])=>{ if(v>topV){topV=v;topId=k;} });
   const topC=getCat(topId);
@@ -1386,8 +1400,8 @@ function getWeekRange(offset){
 function renderWeekView(body){
   const {start,end} = getWeekRange(weekOffset);
   const sess = sessionsInRange(start,end);
-  const totalMin = sess.reduce((a,x)=>a+x.durMin,0);
-  const byCat = catBreakdown(sess);
+  const wst = rangeStats(sess, start, end);
+  const totalMin = wst.total, byCat = wst.byCat;
   let topId=null, topV=-1;
   Object.entries(byCat).forEach(([k,v])=>{ if(v>topV){topV=v;topId=k;} });
   const topC=getCat(topId);
@@ -1407,15 +1421,17 @@ function renderWeekView(body){
 
   html += `<div class="rep-sec-title">日別</div>`;
   const daysArr=[]; for(let i=0;i<7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); daysArr.push(d); }
-  const maxDay = Math.max(1, ...daysArr.map(d=>{ const dk=dayKey(d); return sess.filter(x=>dayKey(x.start)===dk).reduce((a,x)=>a+x.durMin,0); }));
+  const dayDe=[]; daysArr.forEach(d=>{ const ds=new Date(d); ds.setHours(0,0,0,0); const de=new Date(ds); de.setDate(ds.getDate()+1); dayDe.push([ds,de]); });
+  const maxDay = Math.max(1, ...dayDe.map(([ds,de])=>rangeStats(sess, ds, de).total));
   const todayKey=dayKey(new Date());
-  daysArr.forEach(d=>{
+  daysArr.forEach((d,di)=>{
     const dk=dayKey(d);
-    const daySess = sess.filter(x=>dayKey(x.start)===dk);
-    const dTotal = daySess.reduce((a,x)=>a+x.durMin,0);
+    const [ds,de]=dayDe[di];
+    const daySess = sess.filter(x=>x.start<de && x.end>ds);
+    const dTotal = daySess.reduce((a,x)=>a+clipMin(x,ds,de),0);
     const isToday = dk===todayKey;
     let segs='';
-    if(dTotal>0) daySess.forEach(x=>{ const c=getCat(x.rec.catId); segs+=`<div style="width:${x.durMin/dTotal*100}%;background:${c?c.c:'#666'}"></div>`; });
+    if(dTotal>0) daySess.forEach(x=>{ const m=clipMin(x,ds,de); if(m<=0) return; const c=getCat(x.rec.catId); segs+=`<div style="width:${m/dTotal*100}%;background:${c?c.c:'#666'}"></div>`; });
     html += `<div class="week-day-row ${dTotal>0?'tap':''} ${isToday?'today':''}" ${dTotal>0?`onclick="openDayDetail('${dk}')"`:''}>
       <div><div class="week-day-dow">${WD[d.getDay()]}</div><div class="week-day-date">${d.getDate()}</div></div>
       <div class="week-day-bar">${segs}</div>
@@ -1446,8 +1462,8 @@ function renderMonthView(body){
   const y=base.getFullYear(), m=base.getMonth();
   const monthStart=new Date(y,m,1), monthEnd=new Date(y,m+1,1);
   const sess = sessionsInRange(monthStart, monthEnd);
-  const totalMin = sess.reduce((a,x)=>a+x.durMin,0);
-  const byCat = catBreakdown(sess);
+  const mst = rangeStats(sess, monthStart, monthEnd);
+  const totalMin = mst.total, byCat = mst.byCat;
   let topId=null, topV=-1;
   Object.entries(byCat).forEach(([k,v])=>{ if(v>topV){topV=v;topId=k;} });
   const topC=getCat(topId);
@@ -1482,10 +1498,9 @@ function renderMonthView(body){
     weeks.push({start:new Date(wkStart), end:wkEnd});
     wkStart=wkEnd;
   }
-  const maxWk = Math.max(1, ...weeks.map(w=>sessionsInRange(w.start,w.end).reduce((a,x)=>a+x.durMin,0)));
+  const maxWk = Math.max(1, ...weeks.map(w=>rangeStats(sessionsInRange(w.start,w.end), w.start, w.end).total));
   weeks.forEach((w,i)=>{
-    const wSess = sessionsInRange(w.start,w.end);
-    const wTotal = wSess.reduce((a,x)=>a+x.durMin,0);
+    const wTotal = rangeStats(sessionsInRange(w.start,w.end), w.start, w.end).total;
     const pct = wTotal/maxWk*100;
     html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${i<weeks.length-1?'8px':'0'};">
       <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);width:34px;flex-shrink:0;">第${i+1}週</span>
@@ -1519,8 +1534,8 @@ function openDayDetail(dk){
 
   document.getElementById('ddTitle').textContent = fmtDayHeader(dateObj);
 
-  const totalMin = sess.reduce((a,x)=>a+x.durMin,0);
-  const byCat = catBreakdown(sess);
+  const dst = rangeStats(sess, dayStart, dayEnd);
+  const totalMin = dst.total, byCat = dst.byCat;
   let topId=null, topV=-1;
   Object.entries(byCat).forEach(([k,v])=>{ if(v>topV){topV=v;topId=k;} });
   const topC = getCat(topId);
@@ -1818,7 +1833,7 @@ async function testNotify(){
     if(p!=='granted'){ toast('通知を許可してください'); return; }
   }
   const reg = await getSWReg();
-  const title='通知テスト', opts={body:'イマログの通知は正常です', tag:'imalog-continue-test', icon:'./icons/icon-192.png', badge:'./icons/icon-192.png'};
+  const title='通知テスト', opts={tag:'imalog-continue-test', timestamp:Date.now()};
   try{
     if(reg){ await reg.showNotification(title, opts); }
     else { new Notification(title, opts); }
@@ -1843,15 +1858,10 @@ async function maybeNotifyContinuing(){
   const reg = await getSWReg(); if(!reg) return;
   try{
     await reg.showNotification(`まだ「${nm}」継続中？`, {
-      body:`${fmtElapsed(last.rec.ts)}経過。タップして記録を変更できます`,
       tag:'imalog-continue',
       renotify:true,
-      requireInteraction:true,
-      icon:'./icons/icon-192.png',
-      badge:'./icons/icon-192.png',
-      vibrate:[200,100,200],
-      data:{url:'./index.html', recId:last.rec.id},
-      actions:[{action:'continue', title:'継続する'},{action:'change', title:'変更する'}]
+      timestamp:Date.now(),
+      data:{url:'./index.html', recId:last.rec.id}
     });
   }catch(e){}
 }
