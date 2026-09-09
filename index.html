@@ -225,8 +225,10 @@ svg{display:block;}
 .d-tl-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .d-tl-ti{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);}
 .d-tl-pie-wrap{display:flex;align-items:center;justify-content:center;padding:2px 0;}
-.d-tl-ring{position:relative;width:204px;height:204px;flex-shrink:0;}
+.d-tl-ring{position:relative;width:300px;height:300px;flex-shrink:0;}
 .d-tl-ring svg{width:100%;height:100%;display:block;}
+.d-tl-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.d-tl-clock{font-family:'DM Mono',monospace;font-size:38px;font-weight:500;color:var(--text);letter-spacing:.02em;}
 .ring-track{stroke:var(--bg3);}
 .d-tl-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
 .leg-it{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);}
@@ -324,11 +326,6 @@ svg{display:block;}
 .rep-hv .ic{width:16px;height:16px;}
 .rep-hsub{font-size:10px;color:var(--text2);margin-top:3px;}
 .rep-sec-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin:14px 2px 8px;}
-.rep-sec-title-row{display:flex;align-items:center;justify-content:space-between;margin:14px 2px 8px;}
-.chart-toggle{display:flex;gap:3px;background:var(--bg3);border-radius:8px;padding:2px;}
-.chart-toggle-btn{width:26px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .15s;}
-.chart-toggle-btn .ic{width:13px;height:13px;}
-.chart-toggle-btn.on{background:var(--bg2);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.15);}
 .rep-sec-title:first-of-type{margin-top:0;}
 .rep-cat-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;margin-bottom:6px;}
 .rep-cat-row{display:flex;align-items:center;gap:9px;padding:10px 13px;border-top:1px solid var(--border);}
@@ -1004,8 +1001,8 @@ function ringSegs12(sess, rStart, rEnd, cx, cy, r, circ, sw){
   return s;
 }
 function renderDayRingHtml(sess, dayStart){
-  const size=204, cx=size/2, cy=size/2;
-  const rO=size/2-11, rI=rO-25, sw=17;
+  const size=300, cx=size/2, cy=size/2;
+  const rO=size/2-11, rI=rO-38, sw=20;
   const cO=2*Math.PI*rO, cI=2*Math.PI*rI;
   const noon=new Date(dayStart); noon.setHours(12,0,0,0);
   const dayEnd=new Date(dayStart); dayEnd.setDate(dayStart.getDate()+1);
@@ -1017,7 +1014,8 @@ function renderDayRingHtml(sess, dayStart){
     +ringSegs12(sess, oS, oE, cx, cy, rO, cO, sw)
     +ringSegs12(sess, iS, iE, cx, cy, rI, cI, sw);
   const empty=!sess.length?`<div style="text-align:center;font-size:10px;color:var(--text3);margin-top:6px;">まだ記録がありません</div>`:'';
-  return `<div><div class="d-tl-ring"><svg viewBox="0 0 ${size} ${size}">${segs}</svg></div>${empty}</div>`;
+  return `<div><div class="d-tl-ring"><svg viewBox="0 0 ${size} ${size}">${segs}</svg>`
+    +`<div class="d-tl-center"><div class="d-tl-clock">${fmtTime(new Date())}</div></div></div>${empty}</div>`;
 }
 function renderTimeline(){
   const pie=document.getElementById('tlPie'), legend=document.getElementById('tlLegend');
@@ -1211,7 +1209,6 @@ let repMode='cal';       // 'cal' | 'week' | 'month'
 let calMonthOffset=0;    // for calendar & month view
 let calSelectedDay=null; // dayKey tapped in calendar view (bottom shows that day)
 let weekOffset=0;        // for week view
-let weekChartMode='bar', monthChartMode='bar';  // 'bar' | 'pie'
 
 function setRepMode(m){
   repMode=m;
@@ -1253,10 +1250,25 @@ function rangeStats(sess, s, e){
   });
   return {byCat, total};
 }
+const UNCLS_ID='__unclassified__';
+function brCat(id){
+  if(id===UNCLS_ID) return {nm:'未分類', ic:'ic-question', c:'#7a7a7a'};
+  return getCat(id);
+}
+/* Per-day averages normalized to a 24h day; gaps become 未分類.
+   Clipped inputs guarantee the averaged total never exceeds 24h. */
+function avgBreakdown(byCat, totalMin, days){
+  if(!(days>=1) || totalMin<=0) return {byCat:{}, total:0};
+  const avg={};
+  Object.entries(byCat).forEach(([k,v])=>{ avg[k]=Math.round(v/days); });
+  const uncls = Math.round(1440 - totalMin/days);
+  if(uncls>=1) avg[UNCLS_ID]=uncls;
+  return {byCat:avg, total:1440};
+}
 function renderCatBreakdownHtml(byCat, totalMin){
   let html='';
   Object.entries(byCat).sort((a,b)=>b[1]-a[1]).forEach(([id,mins])=>{
-    const c=getCat(id);
+    const c=brCat(id);
     const pct = totalMin>0 ? mins/totalMin*100 : 0;
     html += `<div class="rep-cat-row">
       <div class="rep-cat-ic" style="background:${(c?c.c:'#7a7a7a')}22;color:${c?c.c:'#7a7a7a'}">${svgUse(iconOf(c))}</div>
@@ -1281,7 +1293,7 @@ function renderPieChartHtml(byCat, totalMin, size){
   let offset=0;
   let segs='';
   entries.forEach(([id,mins])=>{
-    const c=getCat(id);
+    const c=brCat(id);
     const frac = mins/totalMin;
     const dash = frac*circumference;
     const gap = circumference-dash;
@@ -1290,7 +1302,7 @@ function renderPieChartHtml(byCat, totalMin, size){
     offset += dash;
   });
   const topEntry = entries[0];
-  const topC = getCat(topEntry[0]);
+  const topC = brCat(topEntry[0]);
   const topPct = Math.round(topEntry[1]/totalMin*100);
   return `<div style="display:flex;align-items:center;justify-content:center;position:relative;">
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${segs}</svg>
@@ -1455,17 +1467,11 @@ function renderWeekView(body){
     </div>`;
   });
 
-  html += `<div class="rep-sec-title-row">
-    <div class="rep-sec-title" style="margin:0;">カテゴリ別の内訳</div>
-    <div class="chart-toggle">
-      <button class="chart-toggle-btn ${weekChartMode==='bar'?'on':''}" onclick="weekChartMode='bar';renderReport()">${svgUse('ic-list')}</button>
-      <button class="chart-toggle-btn ${weekChartMode==='pie'?'on':''}" onclick="weekChartMode='pie';renderReport()">${svgUse('ic-pie')}</button>
-    </div>
-  </div>`;
-  if(weekChartMode==='pie'){
-    html += `<div class="rep-cat-wrap" style="padding:20px;">${renderPieChartHtml(byCat, totalMin)}</div>`;
-  }
-  html += `<div class="rep-cat-wrap">${renderCatBreakdownHtml(byCat, totalMin)}</div>
+  const wActive = dayDe.filter(([ds,de])=>rangeStats(sess, ds, de).total>0).length;
+  const wAvg = avgBreakdown(byCat, totalMin, wActive);
+  html += `<div class="rep-sec-title">カテゴリ別の内訳（1日あたり）</div>
+  <div class="rep-cat-wrap" style="padding:20px;">${renderPieChartHtml(wAvg.byCat, wAvg.total)}</div>
+  <div class="rep-cat-wrap">${renderCatBreakdownHtml(wAvg.byCat, wAvg.total)}</div>
   <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-upload')}CSVでエクスポート</button>`;
 
   body.innerHTML = html;
@@ -1483,8 +1489,13 @@ function renderMonthView(body){
   let topId=null, topV=-1;
   Object.entries(byCat).forEach(([k,v])=>{ if(v>topV){topV=v;topId=k;} });
   const topC=getCat(topId);
-  const activeDays = new Set(sess.map(x=>dayKey(x.start))).size;
   const daysInMonth = new Date(y,m+1,0).getDate();
+  // days with actual recorded time (clipped), robust against month-spanning sessions
+  let activeDays=0;
+  for(let d=1; d<=daysInMonth; d++){
+    const ds=new Date(y,m,d), de=new Date(y,m,d+1);
+    if(rangeStats(sess, ds, de).total>0) activeDays++;
+  }
 
   let html = `<div class="rep-nav">
     <button class="rep-nb" onclick="calMonthOffset--;calSelectedDay=null;renderReport()">${svgUse('ic-chevron-l')}</button>
@@ -1501,42 +1512,12 @@ function renderMonthView(body){
     <div class="rep-hcard"><div class="rep-hl">最多カテゴリ</div><div class="rep-hv" style="font-size:16px">${topC?svgUse(iconOf(topC))+' '+esc(topC.nm):'—'}</div><div class="rep-hsub">${topC?fmtDur(topV)+'（全体の'+Math.round(topV/totalMin*100)+'%）':''}</div></div>
   </div>`;
 
-  // weekly totals within month (bars)
-  html += `<div class="rep-sec-title">週別の推移</div><div class="rep-cat-wrap" style="padding:14px;">`;
-  const weeks=[];
-  let wkStart=new Date(monthStart);
-  // align to weekStart
-  const dow=wkStart.getDay();
-  const back = weekStart===1 ? (dow===0?6:dow-1) : dow;
-  wkStart.setDate(wkStart.getDate()-back);
-  while(wkStart<monthEnd){
-    const wkEnd=new Date(wkStart); wkEnd.setDate(wkStart.getDate()+7);
-    weeks.push({start:new Date(wkStart), end:wkEnd});
-    wkStart=wkEnd;
-  }
-  const maxWk = Math.max(1, ...weeks.map(w=>rangeStats(sessionsInRange(w.start,w.end), w.start, w.end).total));
-  weeks.forEach((w,i)=>{
-    const wTotal = rangeStats(sessionsInRange(w.start,w.end), w.start, w.end).total;
-    const pct = wTotal/maxWk*100;
-    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:${i<weeks.length-1?'8px':'0'};">
-      <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);width:34px;flex-shrink:0;">第${i+1}週</span>
-      <div style="flex:1;height:10px;background:var(--bg3);border-radius:5px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:5px;"></div></div>
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);width:52px;text-align:right;flex-shrink:0;">${wTotal>0?fmtDur(wTotal):'—'}</span>
-    </div>`;
-  });
-  html += `</div>`;
+  // weekly totals within month (bars) -- removed per request
 
-  html += `<div class="rep-sec-title-row">
-    <div class="rep-sec-title" style="margin:0;">カテゴリ別の内訳</div>
-    <div class="chart-toggle">
-      <button class="chart-toggle-btn ${monthChartMode==='bar'?'on':''}" onclick="monthChartMode='bar';renderReport()">${svgUse('ic-list')}</button>
-      <button class="chart-toggle-btn ${monthChartMode==='pie'?'on':''}" onclick="monthChartMode='pie';renderReport()">${svgUse('ic-pie')}</button>
-    </div>
-  </div>`;
-  if(monthChartMode==='pie'){
-    html += `<div class="rep-cat-wrap" style="padding:20px;">${renderPieChartHtml(byCat, totalMin)}</div>`;
-  }
-  html += `<div class="rep-cat-wrap">${renderCatBreakdownHtml(byCat, totalMin)}</div>
+  const mAvg = avgBreakdown(byCat, totalMin, activeDays);
+  html += `<div class="rep-sec-title">カテゴリ別の内訳（1日あたり）</div>
+  <div class="rep-cat-wrap" style="padding:20px;">${renderPieChartHtml(mAvg.byCat, mAvg.total)}</div>
+  <div class="rep-cat-wrap">${renderCatBreakdownHtml(mAvg.byCat, mAvg.total)}</div>
   <button class="csv-btn" onclick="exportCSV()">${svgUse('ic-upload')}CSVでエクスポート</button>`;
 
   body.innerHTML = html;
