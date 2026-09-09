@@ -275,7 +275,7 @@ svg{display:block;}
 .rib.ed:active{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 42%,transparent);background:color-mix(in srgb,var(--accent) 9%,transparent);}
 .load-more-btn{width:100%;padding:12px;border-radius:var(--rs);border:1px dashed var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;text-align:center;margin-top:4px;}
 .load-more-btn:active{background:var(--bg3);}
-.empty{text-align:center;padding:56px 24px;color:var(--text2);font-size:13px;line-height:1.8;}
+.rl-wrap .empty{text-align:center;padding:56px 24px;color:var(--text2);font-size:13px;line-height:1.8;}
 .fab{position:absolute;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 14px color-mix(in srgb,var(--accent) 45%,transparent);transition:transform .15s;z-index:6;}
 .fab .ic{width:22px;height:22px;}
 .fab:active{transform:scale(.94);}
@@ -1020,11 +1020,12 @@ function renderDayRingHtml(sess, dayStart){
   return `<div><div class="d-tl-ring"><svg viewBox="0 0 ${size} ${size}">${segs}</svg></div>${empty}</div>`;
 }
 function renderTimeline(){
-  const today=dayKey(new Date());
   const pie=document.getElementById('tlPie'), legend=document.getElementById('tlLegend');
   pie.innerHTML=''; legend.innerHTML='';
-  const sess=sessionsFrom(sortedRecs()).filter(x=>dayKey(x.start)===today);
   const dayStart=new Date(); dayStart.setHours(0,0,0,0);
+  const dayEnd=new Date(dayStart); dayEnd.setDate(dayStart.getDate()+1);
+  // include sessions overlapping today (not only those starting today) so overnight records show
+  const sess=sessionsFrom(sortedRecs()).filter(x=>x.start<dayEnd && x.end>dayStart);
   pie.innerHTML=renderDayRingHtml(sess, dayStart);
   if(!sess.length) return;
   const usedCats=new Set();
