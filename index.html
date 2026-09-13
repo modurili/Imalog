@@ -1603,7 +1603,8 @@ function importSleepCSV(input){
 /* import後に開いている画面を更新（記録一覧・レポートにも即反映） */
 function afterImportRefresh(){
   renderDash();
-  if(document.getElementById('pg-rec').classList.contains('active')){ recRendered=0; document.getElementById('recL').dataset.lastDay=''; renderRec(); }
+  recRendered=0; document.getElementById('recL').dataset.lastDay='';
+  if(document.getElementById('pg-rec').classList.contains('active')) renderRec();
   if(document.getElementById('pg-rep').classList.contains('active')) renderReport();
   if(document.getElementById('pg-my').classList.contains('active')) renderMy();
 }
@@ -1753,8 +1754,9 @@ function applySleepInterval(ivStart, ivEnd, sleepCatId){
     }
     if(x.start<ivStart && x.end>ivEnd){
       // sleep interval sits entirely inside this open record's span —
-      // keep the original open record (it will naturally resume after ivEnd
-      // once the fixed sleep record is inserted, since sessionsFrom clips against it)
+      // keep the original (it ends at ivStart via the sleep record) and
+      // insert a resume record at ivEnd so [ivEnd, next) is not lost
+      toInsertOpenAfter.push({catId:rec.catId, newTs:ivEnd.toISOString()});
       return;
     }
     if(x.start<ivStart && x.end>ivStart && x.end<=ivEnd){
@@ -1773,6 +1775,7 @@ function applySleepInterval(ivStart, ivEnd, sleepCatId){
     recs = recs.filter(r=>!toRemoveIds.has(r.id));
   }
   toAdjust.forEach(({rec,newTs})=>{ rec.ts = newTs; });
+  toInsertOpenAfter.forEach(({catId,newTs})=>{ recs.push({id:uid(), catId, ts:newTs}); });
 
   recs.push({id:uid(), catId:sleepCatId, ts:ivStart.toISOString(), endTs:ivEnd.toISOString()});
   sortedCache=null;
